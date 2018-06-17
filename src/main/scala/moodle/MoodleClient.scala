@@ -87,14 +87,12 @@ class MoodleClient(val moodleSession: String) {
       case filenameRegex(name) => name
     }
 
-    assert(!originalFilename.contains("/")) // FIXME
-
     val (originalFileNameWithout, extension) = {
       val split = originalFilename.split("\\.")
       (split.take(split.size - 1).mkString("."), split(split.size - 1))
     }
 
-    val out = new BufferedOutputStream(new FileOutputStream(directory.getAbsolutePath + File.separator + resource.title + "." + extension))
+    val out = new BufferedOutputStream(new FileOutputStream(directory.getAbsolutePath + File.separator + resource.title.replaceAll("[\\\\/:*?\"<>|]", "") + "." + extension))
 
     out.write(bytes.body)
     out.flush()
