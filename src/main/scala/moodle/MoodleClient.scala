@@ -1,11 +1,11 @@
 package moodle
 
 import moodle.datatypes._
-
-import java.io.{BufferedOutputStream, FileOutputStream}
+import java.io.{BufferedOutputStream, File, FileOutputStream}
 import java.net.HttpCookie
 
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
+
 import scalaj.http.{Http, HttpRequest, HttpResponse}
 
 class MoodleClient(val moodleSession: String) {
@@ -75,7 +75,7 @@ class MoodleClient(val moodleSession: String) {
     resources.flatten
   }
 
-  def downloadFile(resource: CourseResourceFile, directory: String): Unit = {
+  def downloadFile(resource: CourseResourceFile, directory: File): Unit = {
     val redirect = request(resource.url, absolute = true).asString
     assert(redirect.isNotError)
     assert(redirect.location.isDefined)
@@ -89,12 +89,23 @@ class MoodleClient(val moodleSession: String) {
 
     assert(!originalFilename.contains("/")) // FIXME
 
-    val out = new BufferedOutputStream(new FileOutputStream(directory + originalFilename))
+    val (originalFileNameWithout, extension) = {
+      val split = originalFilename.split("\\.")
+      (split.take(split.size - 1).mkString("."), split(split.size - 1))
+    }
+
+    val out = new BufferedOutputStream(new FileOutputStream(directory.getAbsolutePath + File.separator + resource.title + "." + extension))
 
     out.write(bytes.body)
     out.flush()
 
     out.close()
+  }
+
+  def isConnected: Option[String] = {
+    val dom = browser.parseString(homepage)
+
+    (dom >?> element("ul.pull-right > li > a > em").map(_.text)).filter(_ != "Log out")
   }
 
 }
